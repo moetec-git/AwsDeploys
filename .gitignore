@@ -1,0 +1,23 @@
+#  Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*g
+
+# .tfplan files
+*.tfplan
+
+# .hcl files from Terraform v0.14 and newer
+*.hcl
+
+# working directory for web app
+/globo_web_app/*
+
+#python files
+__pycache__/
+*.py[cod]
+*$py.class
+*aws_s3_route53-try.zip*
+
+
