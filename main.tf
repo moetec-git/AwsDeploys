@@ -3,12 +3,25 @@
 resource "aws_cloudwatch_event_rule" "this" {
   name        = "capture-new-record-on-route-53"
   description = "Capture every new record added on route 53"
-
   event_pattern = <<EOF
 {
-  "detail-type": [
-    "AWS Console Sign In via CloudTrail"
-  ]
+"source": ["aws.route53"],
+    "detail": {
+        "eventSource": ["route53.amazonaws.com"],
+        "eventName": ["ChangeResourceRecordSets"],
+        "requestParameters": {
+            "hostedZoneId": ["Z06816882FAV86WAANIE1"],
+            "changeBatch": {
+                "changes":
+                    {
+                        "action": ["CREATE"],
+                        "resourceRecordSet": {
+                            "type": ["A"]
+                        }
+                    }
+            }
+        }
+    }
 }
 EOF
 }

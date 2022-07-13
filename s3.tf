@@ -2,11 +2,56 @@
 # creating an aws_s3_bucket
 resource "aws_s3_bucket" "bucket-1" {
   bucket        =  "teebuckjay32"
+  force_destroy = true
 }
 
 resource "aws_s3_bucket_acl" "example_bucket_acl" {
   bucket = aws_s3_bucket.bucket-1.id
   acl    = "private"
+}
+
+#creating a cloud trail 
+data "aws_caller_identity" "current" {}
+
+resource "aws_cloudtrail" "test" {
+  name                          = "tf-trail-test"
+  s3_bucket_name                = aws_s3_bucket.bucket-1.id
+  s3_key_prefix                 = "prefix"
+  include_global_service_events = false
+}
+
+resource "aws_s3_bucket_policy" "foo" {
+  bucket = aws_s3_bucket.bucket-1.id
+  policy = <<POLICY
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AWSCloudTrailAclCheck",
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "cloudtrail.amazonaws.com"
+            },
+            "Action": "s3:GetBucketAcl",
+            "Resource": "${aws_s3_bucket.bucket-1.arn}"
+        },
+        {
+            "Sid": "AWSCloudTrailWrite",
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "cloudtrail.amazonaws.com"
+            },
+            "Action": "s3:PutObject",
+            "Resource": "${aws_s3_bucket.bucket-1.arn}/prefix/AWSLogs/${data.aws_caller_identity.current.account_id}/*",
+            "Condition": {
+                "StringEquals": {
+                    "s3:x-amz-acl": "bucket-owner-full-control"
+                }
+            }
+        }
+    ]
+}
+POLICY
 }
 
 
@@ -102,8 +147,8 @@ resource "aws_lambda_function" "route-53-backup" {
 
 resource "aws_cloudwatch_event_rule" "route53-backup" {
   name        = "backup-record-on-route-53"
-  description = "backup every record added on route 53 every 6 hours"
-  schedule_expression = "rate(360 minutes)"
+  description = "backup every record added on route 53 every 1 hours"
+  schedule_expression = "rate(60 minutes)"
 }
 
 resource "aws_cloudwatch_event_target" "route53-backup" {
@@ -119,3 +164,4 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.route53-backup.arn
 }
+
